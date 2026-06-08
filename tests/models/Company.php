@@ -6,10 +6,10 @@ use p4it\saveRelationsBehavior\SaveRelationsBehavior;
 
 class Company extends \yii\db\ActiveRecord
 {
-
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'company';
@@ -18,12 +18,13 @@ class Company extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function behaviors()
     {
         return [
             'saveRelations' => [
-                'class'     => SaveRelationsBehavior::className(),
-                'relations' => ['users']
+                'class'     => SaveRelationsBehavior::class,
+                'relations' => ['users'],
             ],
         ];
     }
@@ -31,12 +32,13 @@ class Company extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             ['name', 'required'],
             ['name', 'unique', 'targetClass' => '\tests\models\Company'],
-            [['users'], 'safe']
+            [['users'], 'safe'],
         ];
     }
 
@@ -45,7 +47,7 @@ class Company extends \yii\db\ActiveRecord
      */
     public function getUsers()
     {
-        return $this->hasMany(User::className(), ['company_id' => 'id']);
+        return $this->hasMany(User::class, ['company_id' => 'id']);
     }
 
 }

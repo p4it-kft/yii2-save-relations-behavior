@@ -12,6 +12,7 @@ class User extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'user';
@@ -20,12 +21,13 @@ class User extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function behaviors()
     {
         return [
             'saveRelations' => [
-                'class'     => SaveRelationsBehavior::className(),
-                'relations' => ['userProfile' => ['cascadeDelete' => true], 'company']
+                'class'     => SaveRelationsBehavior::class,
+                'relations' => ['userProfile' => ['cascadeDelete' => true], 'company'],
             ],
         ];
     }
@@ -33,14 +35,15 @@ class User extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             ['company_id', 'integer'],
             [['username'], 'required'],
             ['username', 'unique', 'targetClass' => '\tests\models\User'],
-            [['company_id'], 'exist', 'skipOnError' => true, 'targetClass' => Company::className(), 'targetAttribute' => ['company_id' => 'id']],
-            [['userProfile', 'company'], 'safe']
+            [['company_id'], 'exist', 'skipOnError' => true, 'targetClass' => Company::class, 'targetAttribute' => ['company_id' => 'id']],
+            [['userProfile', 'company'], 'safe'],
         ];
     }
 
@@ -49,7 +52,7 @@ class User extends \yii\db\ActiveRecord
      */
     public function getUserProfile()
     {
-        return $this->hasOne(UserProfile::className(), ['user_id' => 'id']);
+        return $this->hasOne(UserProfile::class, ['user_id' => 'id']);
     }
 
     /**
@@ -57,7 +60,7 @@ class User extends \yii\db\ActiveRecord
      */
     public function getCompany()
     {
-        return $this->hasOne(Company::className(), ['id' => 'company_id']);
+        return $this->hasOne(Company::class, ['id' => 'company_id']);
     }
 
 }

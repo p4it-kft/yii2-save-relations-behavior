@@ -1,32 +1,35 @@
-image: juban/yii2-php-56:1.0.0
+image: php:8.4-cli
 
 cache:
-  key: "$CI_BUILD_NAME_$CI_BUILD_REF_NAME"
-  untracked: true
+  key: "$CI_JOB_NAME_$CI_COMMIT_REF_NAME"
   paths:
-    - /root/.composer
+    - vendor/
+    - .composer-cache/
 
 stages:
-  - build
+  - lint
   - test
-  - deploy
 
-build:
-  stage: build
+variables:
+  COMPOSER_HOME: "$CI_PROJECT_DIR/.composer-cache"
+
+before_script:
+  - apt-get update -yqq && apt-get install -yqq git unzip libzip-dev
+  - docker-php-ext-install zip
+  - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+  - composer install --prefer-dist --no-interaction --no-progress
+
+cs-fixer:
+  stage: lint
   script:
-    - composer install --dev --prefer-dist --no-interaction
-  artifacts:
-    name: "${CI_BUILD_NAME}_${CI_BUILD_REF_NAME}"
-    expire_in: 1 week
-    untracked: true
+    - vendor/bin/php-cs-fixer fix --dry-run --diff
+
+rector:
+  stage: lint
+  script:
+    - vendor/bin/rector process --dry-run
 
 test:
   stage: test
-  only:
-    - master
   script:
-    - phpunit --coverage-text --colors=never --coverage-html tests/report
-  artifacts:
-      paths:
-        - tests/report
-
+    - vendor/bin/phpunit --colors=never

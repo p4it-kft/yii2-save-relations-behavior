@@ -7,6 +7,7 @@ class LinkType extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'link_type';
@@ -15,11 +16,12 @@ class LinkType extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             [['name'], 'required'],
-            [['name'], 'unique']
+            [['name'], 'unique'],
         ];
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link http://www.lahautesociete.com
  * @copyright Copyright (c) 2016 La Haute Société
@@ -15,10 +16,10 @@ use p4it\saveRelationsBehavior\SaveRelationsBehavior;
  **/
 class DummyModel extends \yii\db\ActiveRecord
 {
-
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'dummy';
@@ -27,12 +28,13 @@ class DummyModel extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function behaviors()
     {
         return [
             'saveRelations' => [
-                'class'     => SaveRelationsBehavior::className(),
-                'relations' => ['children']
+                'class'     => SaveRelationsBehavior::class,
+                'relations' => ['children'],
             ],
         ];
     }
@@ -42,7 +44,7 @@ class DummyModel extends \yii\db\ActiveRecord
      */
     public function getChildren()
     {
-        return $this->hasOne(DummyModel::className(), ['id' => 'parent_id']);
+        return $this->hasOne(DummyModel::class, ['id' => 'parent_id']);
     }
 
 }

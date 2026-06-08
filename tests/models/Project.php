@@ -12,6 +12,7 @@ class Project extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'project';
@@ -20,11 +21,12 @@ class Project extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function behaviors()
     {
         return [
             'saveRelations' => [
-                'class'     => SaveRelationsBehavior::className(),
+                'class'     => SaveRelationsBehavior::class,
                 'relations' => [
                     'company',
                     'users',
@@ -33,13 +35,11 @@ class Project extends \yii\db\ActiveRecord
                     'links'        => ['scenario' => Link::SCENARIO_FIRST],
                     'projectLinks' => ['cascadeDelete' => true],
                     'tags'         => [
-                        'extraColumns' => function ($model) {
-                            /** @var $model Tag */
-                            return [
-                                'order' => $model->order
-                            ];
-                        }
-                    ]
+                        'extraColumns' => /** @var $model Tag */
+                        fn ($model) => [
+                            'order' => $model->order,
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -48,18 +48,20 @@ class Project extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             [['name', 'company_id'], 'required'],
             [['name'], 'unique', 'targetAttribute' => ['company_id', 'name']],
-            [['company', 'links', 'users', 'contacts', 'images', 'projectLinks', 'tags'], 'safe']
+            [['company', 'links', 'users', 'contacts', 'images', 'projectLinks', 'tags'], 'safe'],
         ];
     }
 
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function transactions()
     {
         return [
@@ -72,7 +74,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getCompany()
     {
-        return $this->hasOne(Company::className(), ['id' => 'company_id']);
+        return $this->hasOne(Company::class, ['id' => 'company_id']);
     }
 
     /**
@@ -80,7 +82,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getProjectUsers()
     {
-        return $this->hasMany(ProjectUser::className(), ['project_id' => 'id']);
+        return $this->hasMany(ProjectUser::class, ['project_id' => 'id']);
     }
 
     /**
@@ -88,9 +90,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getUsers()
     {
-        return $this->hasMany(User::className(), ['id' => 'user_id'])->via('projectUsers', function ($query) {
-            return $query;
-        });
+        return $this->hasMany(User::class, ['id' => 'user_id'])->via('projectUsers', fn ($query) => $query);
     }
 
     /**
@@ -98,7 +98,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getProjectLinks()
     {
-        return $this->hasMany(ProjectLink::className(), ['project_id' => 'id']);
+        return $this->hasMany(ProjectLink::class, ['project_id' => 'id']);
     }
 
     /**
@@ -106,7 +106,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getContacts()
     {
-        return $this->hasMany(ProjectContact::className(), ['project_id' => 'id']);
+        return $this->hasMany(ProjectContact::class, ['project_id' => 'id']);
     }
 
     /**
@@ -114,7 +114,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getImages()
     {
-        return $this->hasMany(ProjectImage::className(), ['project_id' => 'id']);
+        return $this->hasMany(ProjectImage::class, ['project_id' => 'id']);
     }
 
     /**
@@ -122,7 +122,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getLinks()
     {
-        return $this->hasMany(Link::className(), ['language' => 'language', 'name' => 'name'])->via('projectLinks');
+        return $this->hasMany(Link::class, ['language' => 'language', 'name' => 'name'])->via('projectLinks');
     }
 
     /**
@@ -130,7 +130,7 @@ class Project extends \yii\db\ActiveRecord
      */
     public function getTags()
     {
-        return $this->hasMany(Tag::className(), ['id' => 'tag_id'])->viaTable('project_tags', ['project_id' => 'id']);
+        return $this->hasMany(Tag::class, ['id' => 'tag_id'])->viaTable('project_tags', ['project_id' => 'id']);
     }
 
 }
