@@ -43,6 +43,7 @@ class SaveRelationsBehavior extends Behavior
     private array $_relationsScenario = [];
     private array $_relationsExtraColumns = [];
     private array $_relationsCascadeDelete = [];
+    private array $_relationsLinkOnly = [];
 
     /**
      * @var bool relations attributes now honor the `safe` validation rule
@@ -56,7 +57,7 @@ class SaveRelationsBehavior extends Behavior
     public function init()
     {
         parent::init();
-        $allowedProperties = ['scenario', 'extraColumns', 'cascadeDelete'];
+        $allowedProperties = ['scenario', 'extraColumns', 'cascadeDelete', 'linkOnly'];
         foreach ($this->relations as $key => $value) {
             if (is_int($key)) {
                 $this->_relations[] = $value;
@@ -72,6 +73,43 @@ class SaveRelationsBehavior extends Behavior
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Whether the given relation is configured as link-only.
+     * A link-only relation manages only the relationship link (junction rows for a via-table
+     * relation, or the owner-side foreign key for an owner-side has-one). The related record
+     * models are treated as immutable, pre-persisted entities: they are never validated nor saved.
+     */
+    private function isLinkOnly(string $relationName): bool
+    {
+        return !empty($this->_relationsLinkOnly[$relationName]);
+    }
+
+    /**
+     * Ensure a link-only relation can actually be linked without saving the related record.
+     * That holds for via-table relations (junction rows) and for relations whose foreign key
+     * lives on the owner (the link writes the owner's own column). When the foreign key lives
+     * on the related record, linking would require saving that record, which contradicts
+     * link-only semantics, so the configuration is rejected.
+     * @throws InvalidConfigException
+     */
+    private function assertLinkOnlySupported(string $relationName, ActiveQuery $relation): void
+    {
+        if (!$this->isLinkOnly($relationName) || !empty($relation->via)) {
+            return; // via-table (M2M) / via has-one — always linkable without saving the related record
+        }
+        // Non-via: link-only is valid only when the foreign key is on the owner, i.e. the related
+        // side of the link maps to the related model's primary key (so linking writes the owner's column).
+        /** @var BaseActiveRecord $relatedClass */
+        $relatedClass = $relation->modelClass;
+        if (!$relatedClass::isPrimaryKey(array_keys($relation->link))) {
+            throw new InvalidConfigException(
+                "Relation '{$relationName}' cannot use linkOnly: its foreign key is on the related record, "
+                . 'so linking would require saving that record. Use linkOnly only for via-table (M2M) relations '
+                . 'or has-one relations whose foreign key is on the owner.'
+            );
         }
     }
 
@@ -309,6 +347,14 @@ class SaveRelationsBehavior extends Behavior
         if ($this->_relationsSaveStarted === false && $this->_oldRelationValue !== []) {
             /* @var $model BaseActiveRecord */
             $model = $this->owner;
+            // Reject unsupported link-only configurations up front, before the owner is saved.
+            // Thrown here (outside saveRelatedRecords) so InvalidConfigException propagates instead of
+            // being converted into a validation error.
+            foreach ($this->_relations as $relationName) {
+                if ($this->isLinkOnly($relationName) && array_key_exists($relationName, $this->_oldRelationValue)) {
+                    $this->assertLinkOnlySupported($relationName, $model->getRelation($relationName));
+                }
+            }
             if ($this->saveRelatedRecords($model, $event)) {
                 // If relation is has_one, try to set related model attributes
                 foreach ($this->_relations as $relationName) {
@@ -377,6 +423,18 @@ class SaveRelationsBehavior extends Behavior
     {
         Yii::debug("_prepareHasOneRelation for {$relationName}", __METHOD__);
         $relationModel = $model->{$relationName};
+        if ($this->isLinkOnly($relationName)) {
+            if ($relationModel->getIsNewRecord()) {
+                throw new InvalidArgumentException(
+                    self::prettyRelationName($relationName)
+                    . ': a linkOnly relation can only link already-persisted records (got an unsaved '
+                    . $relationModel::class . ').'
+                );
+            }
+            // Link-only: never validate nor save the related record. The owner-side foreign key is
+            // still set later by _setRelationForeignKeys(); the (existing) related row is left untouched.
+            return;
+        }
         $this->validateRelationModel(self::prettyRelationName($relationName), $relationName, $model->{$relationName});
         $relation = $model->getRelation($relationName);
         $p1 = $model->isPrimaryKey(array_keys($relation->link));
@@ -439,6 +497,20 @@ class SaveRelationsBehavior extends Behavior
      */
     private function _prepareHasManyRelation(BaseActiveRecord $model, $relationName)
     {
+        if ($this->isLinkOnly($relationName)) {
+            // Link-only: never validate the related records; only the junction rows are synced in afterSave.
+            /** @var BaseActiveRecord $relationModel */
+            foreach ($model->{$relationName} as $i => $relationModel) {
+                if ($relationModel->getIsNewRecord()) {
+                    throw new InvalidArgumentException(
+                        self::prettyRelationName($relationName, $i)
+                        . ': a linkOnly relation can only link already-persisted records (got an unsaved '
+                        . $relationModel::class . ').'
+                    );
+                }
+            }
+            return;
+        }
         /** @var BaseActiveRecord $relationModel */
         foreach ($model->{$relationName} as $i => $relationModel) {
             $this->validateRelationModel(self::prettyRelationName($relationName, $i), $relationName, $relationModel);
@@ -538,8 +610,17 @@ class SaveRelationsBehavior extends Behavior
         // Process new relations
         $existingRecords = [];
         /** @var ActiveQuery $relationModel */
+        $linkOnly = $this->isLinkOnly($relationName);
         foreach ($owner->{$relationName} as $i => $relationModel) {
             if ($relationModel->isNewRecord) {
+                if ($linkOnly) {
+                    // Reached only via save(false) (validation skipped); link-only cannot link an unsaved record.
+                    throw new InvalidArgumentException(
+                        self::prettyRelationName($relationName, $i)
+                        . ': a linkOnly relation can only link already-persisted records (got an unsaved '
+                        . $relationModel::class . ').'
+                    );
+                }
                 if (!empty($relation->via) && !$relationModel->save()) {
                     $this->_addError($relationModel, $owner, $relationName, self::prettyRelationName($relationName, $i));
                     throw new DbException('Related record ' . self::prettyRelationName($relationName, $i) . ' could not be saved.');
@@ -549,7 +630,8 @@ class SaveRelationsBehavior extends Behavior
             } else {
                 $existingRecords[] = $relationModel;
             }
-            if ((count($relationModel->dirtyAttributes) || count($this->_newRelationValue)) && !$relationModel->save()) {
+            // Link-only: never save the related record; only the junction rows (synced below) are touched.
+            if (!$linkOnly && (count($relationModel->dirtyAttributes) || count($this->_newRelationValue)) && !$relationModel->save()) {
                 $this->_addError($relationModel, $owner, $relationName, self::prettyRelationName($relationName));
                 throw new DbException('Related record ' . self::prettyRelationName($relationName) . ' could not be saved.');
             }
@@ -646,7 +728,8 @@ class SaveRelationsBehavior extends Behavior
                 $owner->unlink($relationName, $this->_oldRelationValue[$relationName]);
             }
         }
-        if ($owner->{$relationName} instanceof BaseActiveRecord) {
+        // Link-only: the link (owner FK) is written above, but the related record is never saved.
+        if (!$this->isLinkOnly($relationName) && $owner->{$relationName} instanceof BaseActiveRecord) {
             $owner->{$relationName}->save();
         }
     }
@@ -732,6 +815,25 @@ class SaveRelationsBehavior extends Behavior
             throw new InvalidArgumentException('Unknown ' . $relationName . ' relation');
         }
 
+    }
+
+    /**
+     * Toggle link-only mode for a given relation at runtime.
+     * @see isLinkOnly()
+     * @param string $relationName
+     * @param bool $linkOnly
+     * @throws InvalidArgumentException
+     */
+    public function setRelationLinkOnly($relationName, $linkOnly = true)
+    {
+        /** @var BaseActiveRecord $owner */
+        $owner = $this->owner;
+        $relation = $owner->getRelation($relationName, false);
+        if (in_array($relationName, $this->_relations) && !is_null($relation)) {
+            $this->_relationsLinkOnly[$relationName] = $linkOnly;
+        } else {
+            throw new InvalidArgumentException('Unknown ' . $relationName . ' relation');
+        }
     }
 
     /**

@@ -1,5 +1,17 @@
 # Yii2 Active Record Save Relations Behavior Change Log
 
+## [v3.1.0] Unreleased
+
+### Added
+
+- New per-relation `linkOnly` option. When set to `true`, the behavior manages only the relationship link (junction rows for a via-table relation, or the owner-side foreign key for an owner-side has-one) and never validates nor saves the related record models. Useful for linking pre-existing entities that may be invalid by their own rules. Composes with `extraColumns` and `cascadeDelete`.
+- `setRelationLinkOnly()` method to toggle link-only mode for a relation at runtime.
+
+### Notes
+
+- A `linkOnly` relation links records by primary key, so assigning an unsaved (new) record throws `yii\base\InvalidArgumentException`.
+- `linkOnly` on a relation whose foreign key is on the related record (e.g. `hasMany(Child::class, ['owner_id' => 'id'])`) throws `yii\base\InvalidConfigException`, since linking would require saving that record.
+
 ## [v3.0.0] Unreleased
 
 > This release contains breaking changes.
