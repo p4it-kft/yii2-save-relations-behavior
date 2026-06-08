@@ -1,5 +1,27 @@
 # Yii2 Active Record Save Relations Behavior Change Log
 
+## [v3.0.0] Unreleased
+
+> This release contains breaking changes.
+> The minimum PHP version is now 8.4, and the behavior's `loadRelations()` method has been renamed.
+
+### Changed
+
+- **BC**: Raise minimum PHP version to 8.4 (drop PHP 7.4 support).
+- **BC**: Behavior method `loadRelations()` renamed to `loadRelationsForSave()`. yii2 2.0.50 added a native `BaseActiveRecord::loadRelations()` that shadowed the behavior method; use `loadRelationsForSave()` to load relational data for saving.
+- Bump `phpunit/phpunit` to `^12.0`.
+- Replace deprecated `::className()` calls with native `::class`.
+- Apply Rector (PHP 8.4 + code quality / dead code) and PHP-CS-Fixer (PSR-12 + PHP 8.4 migration) across `src` and `tests`.
+
+### Added
+
+- Rector configuration (`rector.php`) and PHP-CS-Fixer configuration (`.php-cs-fixer.dist.php`).
+- `.gitattributes` enforcing LF line endings.
+
+### Fixed
+
+- Compatibility with PHPUnit 12: replace the removed `<filter><whitelist>` config with `<source>` in `phpunit.xml.dist`.
+
 ## [2.0.0] Unreleased
 
 > This release contains breaking changes.
