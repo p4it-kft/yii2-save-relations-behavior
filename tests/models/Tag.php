@@ -10,6 +10,7 @@ class Tag extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'tags';
@@ -34,11 +35,12 @@ class Tag extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             [['name'], 'required'],
-            [['name'], 'string']
+            [['name'], 'string'],
         ];
     }
 }

@@ -25,29 +25,26 @@ trait SaveRelationsTrait
     /**
      * @param $data
      */
-    private function _prepareLoadData(&$data, $formName) {
-        $scope = $formName === null ? $this->formName() : $formName;
+    private function _prepareLoadData(&$data, $formName)
+    {
+        $scope = $formName ?? $this->formName();
 
         foreach ($this->relations as $key => $value) {
-            if (is_int($key)) {
-                $relationName = $value;
-            } else {
-                $relationName = $key;
-            }
+            $relationName = is_int($key) ? $value : $key;
 
-            if(!isset($data[$scope][$relationName])) {
+            if (!isset($data[$scope][$relationName])) {
                 continue;
             }
 
             $relation = $this->getRelation($relationName);
 
-            if(!$relation) {
+            if (!$relation) {
                 continue;
             }
 
             $modelClass = $relation->modelClass;
             /** @var ActiveQuery $relationalModel */
-            $relationalModel = new $modelClass;
+            $relationalModel = new $modelClass();
             $keyName = $relationalModel->formName();
 
             $data[$keyName] = $data[$scope][$relationName];

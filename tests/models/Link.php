@@ -6,11 +6,12 @@ use p4it\saveRelationsBehavior\SaveRelationsBehavior;
 
 class Link extends \yii\db\ActiveRecord
 {
-    const SCENARIO_FIRST = 'first';
+    public const SCENARIO_FIRST = 'first';
 
     /**
      * @inheritdoc
      */
+    #[\Override]
     public static function tableName()
     {
         return 'link';
@@ -19,12 +20,13 @@ class Link extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function behaviors()
     {
         return [
             'saveRelations' => [
-                'class'     => SaveRelationsBehavior::className(),
-                'relations' => ['linkType']
+                'class'     => SaveRelationsBehavior::class,
+                'relations' => ['linkType'],
             ],
         ];
     }
@@ -32,13 +34,14 @@ class Link extends \yii\db\ActiveRecord
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function rules()
     {
         return [
             [['language', 'name', 'link'], 'required'],
             [['name'], 'unique', 'targetAttribute' => ['language', 'name']],
             [['link'], 'url', 'on' => [self::SCENARIO_FIRST]],
-            [['link_type_id', 'linkType'], 'safe']
+            [['link_type_id', 'linkType'], 'safe'],
         ];
     }
 
@@ -47,6 +50,6 @@ class Link extends \yii\db\ActiveRecord
      */
     public function getLinkType()
     {
-        return $this->hasOne(LinkType::className(), ['id' => 'link_type_id']);
+        return $this->hasOne(LinkType::class, ['id' => 'link_type_id']);
     }
 }

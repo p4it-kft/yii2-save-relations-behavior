@@ -20,7 +20,6 @@ use yii\helpers\VarDumper;
 
 class SaveRelationsBehaviorTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,14 +58,14 @@ class SaveRelationsBehaviorTest extends TestCase
         // Company
         $db->createCommand()->createTable('company', [
             'id' => $migration->primaryKey(),
-            'name' => $migration->string()->notNull()->unique()
+            'name' => $migration->string()->notNull()->unique(),
         ])->execute();
 
         // User
         $db->createCommand()->createTable('user', [
             'id' => $migration->primaryKey(),
             'company_id' => $migration->integer()->notNull(),
-            'username' => $migration->string()->notNull()->unique()
+            'username' => $migration->string()->notNull()->unique(),
         ])->execute();
 
         // User profile
@@ -89,37 +88,37 @@ class SaveRelationsBehaviorTest extends TestCase
             'name' => $migration->string()->notNull(),
             'link' => $migration->string()->notNull(),
             'link_type_id' => $migration->integer(),
-            'PRIMARY KEY(language, name)'
+            'PRIMARY KEY(language, name)',
         ])->execute();
 
         $db->createCommand()->createTable('tags', [
             'id' => $migration->primaryKey(),
-            'name' => $migration->string()->notNull()->unique()
+            'name' => $migration->string()->notNull()->unique(),
         ])->execute();
 
         $db->createCommand()->createTable('project_tags', [
             'project_id' => $migration->integer()->notNull(),
             'tag_id' => $migration->integer()->notNull(),
-            'order' => $migration->integer()->notNull()
+            'order' => $migration->integer()->notNull(),
         ])->execute();
 
         $db->createCommand()->createTable('link_type', [
             'id' => $migration->primaryKey(),
-            'name' => $migration->string()->notNull()->unique()
+            'name' => $migration->string()->notNull()->unique(),
         ])->execute();
 
         $db->createCommand()->createTable('project_link', [
             'language' => $migration->string(5)->notNull(),
             'name' => $migration->string()->notNull(),
             'project_id' => $migration->integer()->notNull(),
-            'PRIMARY KEY(language, name, project_id)'
+            'PRIMARY KEY(language, name, project_id)',
         ])->execute();
 
         // Project User
         $db->createCommand()->createTable('project_user', [
             'project_id' => $migration->integer()->notNull(),
             'user_id' => $migration->integer()->notNull(),
-            'PRIMARY KEY(project_id, user_id)'
+            'PRIMARY KEY(project_id, user_id)',
         ])->execute();
 
         // Project Contact
@@ -127,20 +126,20 @@ class SaveRelationsBehaviorTest extends TestCase
             'project_id' => $migration->integer()->notNull(),
             'email' => $migration->string()->notNull(),
             'phone' => $migration->string(),
-            'PRIMARY KEY(project_id, email)'
+            'PRIMARY KEY(project_id, email)',
         ])->execute();
 
         // Project Image
         $db->createCommand()->createTable('project_image', [
             'id' => $migration->primaryKey(),
             'project_id' => $migration->integer()->notNull(),
-            'path' => $migration->string()->notNull()
+            'path' => $migration->string()->notNull(),
         ])->execute();
 
         // Dummy
         $db->createCommand()->createTable('dummy', [
             'id' => $migration->primaryKey(),
-            'parent_id' => $migration->integer()
+            'parent_id' => $migration->integer(),
         ])->execute();
 
         /**
@@ -157,50 +156,50 @@ class SaveRelationsBehaviorTest extends TestCase
             [1, 'Steve Jobs', 1],
             [2, 'Bill Gates', 2],
             [3, 'Tim Cook', 1],
-            [4, 'Jonathan Ive', 1]
+            [4, 'Jonathan Ive', 1],
         ])->execute();
 
         $db->createCommand()->batchInsert('user_profile', ['user_id', 'bio'], [
             [1, 'Steven Paul Jobs (February 24, 1955 – October 5, 2011) was an American entrepreneur, business magnate, inventor, and industrial designer. He was the chairman, chief executive officer (CEO), and co-founder of Apple Inc.; CEO and majority shareholder of Pixar; a member of The Walt Disney Company\'s board of directors following its acquisition of Pixar; and the founder, chairman, and CEO of NeXT.'],
             [2, 'William Henry Gates III (born October 28, 1955) is an American business magnate, investor, author, philanthropist, and co-founder of the Microsoft Corporation along with Paul Allen.'],
             [3, 'Timothy Donald Cook (born November 1, 1960) is an American business executive, industrial engineer, and developer. Cook is the Chief Executive Officer of Apple Inc., previously serving as the company\'s Chief Operating Officer, under its founder Steve Jobs.'],
-            [4, 'Sir Jonathan Paul "Jony" Ive, KBE (born 27 February 1967), is an English industrial designer who is currently the chief design officer (CDO) of Apple and chancellor of the Royal College of Art in London.']
+            [4, 'Sir Jonathan Paul "Jony" Ive, KBE (born 27 February 1967), is an English industrial designer who is currently the chief design officer (CDO) of Apple and chancellor of the Royal College of Art in London.'],
         ])->execute();
 
         $db->createCommand()->batchInsert('project', ['id', 'name', 'company_id'], [
             [1, 'Mac OS X', 1],
-            [2, 'Windows 10', 2]
+            [2, 'Windows 10', 2],
         ])->execute();
 
         $db->createCommand()->batchInsert('link_type', ['id', 'name'], [
             [1, 'public'],
-            [2, 'private']
+            [2, 'private'],
         ])->execute();
 
         $db->createCommand()->batchInsert('link', ['language', 'name', 'link', 'link_type_id'], [
             ['fr', 'mac_os_x', 'http://www.apple.com/fr/osx/', 1],
-            ['en', 'mac_os_x', 'http://www.apple.com/osx/', 1]
+            ['en', 'mac_os_x', 'http://www.apple.com/osx/', 1],
         ])->execute();
 
         $db->createCommand()->batchInsert('project_link', ['language', 'name', 'project_id'], [
             ['fr', 'mac_os_x', 1],
-            ['en', 'mac_os_x', 1]
+            ['en', 'mac_os_x', 1],
         ])->execute();
 
         $db->createCommand()->batchInsert('project_contact', ['email', 'phone', 'project_id'], [
-            ['admin@apple.com', '(123) 456–7890', 1]
+            ['admin@apple.com', '(123) 456–7890', 1],
         ])->execute();
 
         $db->createCommand()->batchInsert('project_image', ['id', 'project_id', 'path'], [
             [1, 1, '/images/macosx.png'],
             [2, 1, '/images/macosx_icon.png'],
-            [3, 2, '/images/windows.png']
+            [3, 2, '/images/windows.png'],
         ])->execute();
 
         $db->createCommand()->batchInsert('project_user', ['project_id', 'user_id'], [
             [1, 1],
             [1, 4],
-            [2, 2]
+            [2, 2],
         ])->execute();
     }
 
@@ -208,7 +207,7 @@ class SaveRelationsBehaviorTest extends TestCase
     {
         $this->expectException('RuntimeException');
         $model = new Model();
-        $model->attachBehavior('saveRelated', SaveRelationsBehavior::className());
+        $model->attachBehavior('saveRelated', SaveRelationsBehavior::class);
     }
 
     public function testUnsupportedRelationProperty()
@@ -404,7 +403,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->links = [
             [
                 'language' => 'fr',
-            ]
+            ],
         ];
         $this->assertCount(1, $project->links, 'Project should have 1 links after assignment');
         $this->assertTrue(
@@ -419,7 +418,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $this->assertCount(2, $project->links, 'Project should have 2 links before save');
         $links = [
             ['language' => 'fr', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/fr-fr/windows/features'],
-            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features']
+            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features'],
         ];
         $project->links = array_merge($project->links, $links);
         $this->assertCount(4, $project->links, 'Project should have 4 links after assignment');
@@ -464,12 +463,12 @@ class SaveRelationsBehaviorTest extends TestCase
         $secondTag->setOrder(3);
         $project->tags = [
             $firstTag,
-            $secondTag
+            $secondTag,
         ];
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertCount(2, $project->tags, 'Project should have 2 tags after assignment');
-        $firstTagJunctionTableColumns = (new \yii\db\Query())->from('project_tags')->where(['tag_id' => $firstTag->id])->one();
-        $secondTagJunctionTableColumns = (new \yii\db\Query())->from('project_tags')->where(['tag_id' => $secondTag->id])->one();
+        $firstTagJunctionTableColumns = new \yii\db\Query()->from('project_tags')->where(['tag_id' => $firstTag->id])->one();
+        $secondTagJunctionTableColumns = new \yii\db\Query()->from('project_tags')->where(['tag_id' => $secondTag->id])->one();
         $this->assertEquals($firstTag->getOrder(), $firstTagJunctionTableColumns['order']);
         $this->assertEquals($secondTag->getOrder(), $secondTagJunctionTableColumns['order']);
     }
@@ -515,22 +514,22 @@ class SaveRelationsBehaviorTest extends TestCase
         $project = Project::findOne(1);
         $data = [
             'Company' => [
-                'name' => 'YiiSoft'
+                'name' => 'YiiSoft',
             ],
             'Link' => [
                 [
                     'language' => 'en',
                     'name' => 'yii',
-                    'link' => 'http://www.yiiframework.com'
+                    'link' => 'http://www.yiiframework.com',
                 ],
                 [
                     'language' => 'fr',
                     'name' => 'yii',
-                    'link' => 'http://www.yiiframework.fr'
-                ]
-            ]
+                    'link' => 'http://www.yiiframework.fr',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertEquals('YiiSoft', $project->company->name, "Company name should be YiiSoft");
         $this->assertCount(2, $project->projectLinks, "Project should have 2 links");
@@ -545,15 +544,15 @@ class SaveRelationsBehaviorTest extends TestCase
             'ProjectContact' => [
                 [
                     'email' => 'admin@apple.com',
-                    'phone' => '(999) 999–9999'
+                    'phone' => '(999) 999–9999',
                 ],
                 [
                     'email' => 'new@apple.com',
-                    'phone' => '(987) 654–3210'
-                ]
-            ]
+                    'phone' => '(987) 654–3210',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertCount(2, $project->contacts, "Project should have 2 contacts");
         $this->assertEquals($project->contacts[0]->phone, '(999) 999–9999');
@@ -568,15 +567,15 @@ class SaveRelationsBehaviorTest extends TestCase
         $data = [
             'ProjectImage' => [
                 [
-                    'path' => '/images/macosx_new.png'
+                    'path' => '/images/macosx_new.png',
                 ],
                 [
                     'id' => 2,
-                    'path' => '/images/macosx_updated.png'
-                ]
-            ]
+                    'path' => '/images/macosx_updated.png',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertCount(2, $project->images, "Project should have 2 images");
         $this->assertEquals($project->images[0]->id, 2);
@@ -595,7 +594,7 @@ class SaveRelationsBehaviorTest extends TestCase
     public function testAssignSingleEmptyObjectToHasManyRelationShouldSucceed()
     {
         $project = new Project();
-        $user = User::findOne(1);
+        User::findOne(1);
         $project->users = null;
         $this->assertCount(0, $project->users, 'Project should have 0 users after assignment');
     }
@@ -624,22 +623,22 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->name = "Yii Framework";
         $data = [
             'Company' => [
-                'name' => 'NewSoft'
+                'name' => 'NewSoft',
             ],
             'Link' => [
                 [
                     'language' => 'en',
                     'name' => 'newsoft',
-                    'link' => 'http://www.newsoft.com'
+                    'link' => 'http://www.newsoft.com',
                 ],
                 [
                     'language' => 'en',
                     'name' => 'newsoft',
-                    'link' => 'http://www.newsoft.co.uk'
-                ]
-            ]
+                    'link' => 'http://www.newsoft.co.uk',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         /***
          * This test throw an yii\base\Exception due to key conflict for related records.
          * That kind of issue is hard to address because no validation process could prevent that.
@@ -669,17 +668,17 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->name = "Yii Framework";
         $data = [
             'Company' => [
-                'name' => 'YiiSoft'
+                'name' => 'YiiSoft',
             ],
             'Link' => [
                 [
                     'language' => 'en',
                     'name' => 'yii',
-                    'link' => 'http://www.yiiframework.ru'
-                ]
-            ]
+                    'link' => 'http://www.yiiframework.ru',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertEquals('YiiSoft', $project->company->name, "Company name should be YiiSoft");
         $this->assertCount(1, $project->projectLinks, "Project should have 1 link");
@@ -689,16 +688,16 @@ class SaveRelationsBehaviorTest extends TestCase
                 [
                     'language' => 'en',
                     'name' => 'yii',
-                    'link' => 'http://www.yiiframework.com'
+                    'link' => 'http://www.yiiframework.com',
                 ],
                 [
                     'language' => 'fr',
                     'name' => 'yii',
-                    'link' => 'http://www.yiiframework.fr'
-                ]
-            ]
+                    'link' => 'http://www.yiiframework.fr',
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
         $this->assertEquals($project->links[0]->link, 'http://www.yiiframework.com');
         $this->assertEquals($project->links[1]->link, 'http://www.yiiframework.fr');
@@ -710,17 +709,17 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->name = "Yii Framework";
         $data = [
             'Company' => [
-                'name' => 'YiiSoft'
+                'name' => 'YiiSoft',
             ],
             'Link' => [
                 [
                     'language' => 'en',
                     'name' => 'yii',
                     'link' => 'Invalid value',
-                ]
-            ]
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertFalse($project->save(), 'Project could be saved');
         $data = [
             'Link' => [
@@ -728,10 +727,10 @@ class SaveRelationsBehaviorTest extends TestCase
                     'language' => 'en',
                     'name' => 'yii',
                     'link' => 'http://www.yiiframework.com',
-                ]
-            ]
+                ],
+            ],
         ];
-        $project->loadRelations($data);
+        $project->loadRelationsForSave($data);
         $this->assertTrue($project->save(), 'Project could not be saved');
     }
 
@@ -748,12 +747,12 @@ class SaveRelationsBehaviorTest extends TestCase
         $user = new User();
         $user->username = 'Dummy More';
         $user->company = [
-            'name' => 'ACME'
+            'name' => 'ACME',
         ];
         $user->setRelationScenario('userProfile', 'insert');
         $user->userProfile = [
             'bio' => "Some great bio",
-            'agree' => 1
+            'agree' => 1,
         ];
         $this->assertEquals(1, $user->userProfile->agree, 'User could not be saved' . VarDumper::dumpAsString($user->errors));
         $this->assertTrue($user->save(), 'User could not be saved' . VarDumper::dumpAsString($user->errors));
@@ -768,10 +767,10 @@ class SaveRelationsBehaviorTest extends TestCase
         $data = [
             'User' => [
                 'username' => 'Someone Else',
-                'company_id' => 1
-            ]
+                'company_id' => 1,
+            ],
         ];
-        $profile->loadRelations($data);
+        $profile->loadRelationsForSave($data);
         $this->assertEquals('Someone Else', $profile->user->username, "User name should be 'Someone Else'");
         $this->assertTrue($profile->user->isNewRecord, "User should be a new record");
         $this->assertEquals(1, $profile->user_id);
@@ -839,7 +838,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $user = new User();
         $user->setAttributes([
             'username' => 'Larry Page',
-            'company_id' => 3
+            'company_id' => 3,
         ]);
         $user->userProfile = new UserProfile();
         $this->assertFalse($user->save(), 'User should not be saved');
@@ -898,19 +897,19 @@ class SaveRelationsBehaviorTest extends TestCase
         ]);
 
         $company->attachBehavior('saveRelations', [
-            'class' => SaveRelationsBehavior::className(),
+            'class' => SaveRelationsBehavior::class,
             'relations' => ['users'],
-            'relationKeyName' => SaveRelationsBehavior::RELATION_KEY_RELATION_NAME
+            'relationKeyName' => SaveRelationsBehavior::RELATION_KEY_RELATION_NAME,
         ]);
 
         $data = [
             'users' => [
                 ['username' => "user1"],
-                ['username' => "user2"]
-            ]
+                ['username' => "user2"],
+            ],
         ];
 
-        $company->loadRelations($data);
+        $company->loadRelationsForSave($data);
 
         $this->assertTrue($company->save(), 'Company could not be saved');
         $this->assertEquals('NewSoft', $company->name, 'Company\'s name is wrong');
@@ -924,7 +923,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->company = Company::findOne(2);
         $links = [
             ['language' => 'fr', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/fr-fr/windows/features', 'link_type_id' => 2],
-            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features', 'link_type_id' => 2]
+            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features', 'link_type_id' => 2],
         ];
         $project->links = $links;
         $oldRelations = $project->getOldRelations();
@@ -942,7 +941,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $this->assertEquals($oldLinks[1]->link, 'http://www.apple.com/osx/');
         $this->assertEquals($oldLinks[1]->link_type_id, 1);
         $oldCompany = $project->getOldRelation('company');
-        $this->assertInstanceOf(Company::className(), $oldCompany);
+        $this->assertInstanceOf(Company::class, $oldCompany);
         $this->assertEquals($oldCompany->id, 1);
         $this->assertEquals($oldCompany->name, 'Apple');
         $this->assertTrue($project->save());
@@ -957,7 +956,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $this->assertEquals($oldLinks[1]->link, 'https://www.microsoft.com/en-us/windows/features');
         $this->assertEquals($oldLinks[1]->link_type_id, 2);
         $oldCompany = $project->getOldRelation('company');
-        $this->assertInstanceOf(Company::className(), $oldCompany);
+        $this->assertInstanceOf(Company::class, $oldCompany);
         $this->assertEquals($oldCompany->id, 2);
         $this->assertEquals($oldCompany->name, 'Microsoft');
 
@@ -969,7 +968,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $project->company = Company::findOne(2);
         $links = [
             ['language' => 'fr', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/fr-fr/windows/features', 'link_type_id' => 2],
-            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features', 'link_type_id' => 2]
+            ['language' => 'en', 'name' => 'windows10', 'link' => 'https://www.microsoft.com/en-us/windows/features', 'link_type_id' => 2],
         ];
         $project->links = $links;
         $dirtyRelations = $project->getDirtyRelations();
@@ -1000,20 +999,20 @@ class SaveRelationsBehaviorTest extends TestCase
                     'name' => 'New Company',
                     'users' => [
                         [
-                            'username' => 'New user'
-                        ]
-                    ]
+                            'username' => 'New user',
+                        ],
+                    ],
                 ],
                 'users' => [
                     [
                         'username' => 'Another user',
                         'company' => 1,
                         'userProfile' => [
-                            'bio' => 'Another user great story'
-                        ]
-                    ]
-                ]
-            ]
+                            'bio' => 'Another user great story',
+                        ],
+                    ],
+                ],
+            ],
         ];
         $project->load($data);
         $this->assertEquals($project->name, "Other name");
@@ -1036,7 +1035,7 @@ class SaveRelationsBehaviorTest extends TestCase
         $project = Project::findOne(1);
         $project->company = [
             'id' => 1,
-            'name' => 'new company'
+            'name' => 'new company',
         ];
         $this->assertTrue($project->save(), 'Project could not be saved ' . VarDumper::dumpAsString($project->getErrors()));
         $project = Project::findOne(1);

@@ -3,8 +3,8 @@
 error_reporting(-1);
 
 define('YII_ENABLE_ERROR_HANDLER', false);
-defined('YII_DEBUG') or define('YII_DEBUG', true);
-defined('YII_ENV') or define('YII_ENV', 'test');
+defined('YII_DEBUG') || define('YII_DEBUG', true);
+defined('YII_ENV') || define('YII_ENV', 'test');
 
 require(__DIR__ . '/../vendor/autoload.php');
 require(__DIR__ . '/../vendor/yiisoft/yii2/Yii.php');
@@ -25,9 +25,9 @@ new \yii\console\Application([
             'targets' => [
                 [
                     'class'      => 'yii\log\FileTarget',
-                    'categories' => ['yii\db\*', 'p4it\saveRelationsBehavior\*']
+                    'categories' => ['yii\db\*', 'p4it\saveRelationsBehavior\*'],
                 ],
-            ]
+            ],
         ],
-    ]
+    ],
 ]);
