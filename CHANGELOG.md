@@ -1,6 +1,6 @@
 # Yii2 Active Record Save Relations Behavior Change Log
 
-## [v3.1.0] Unreleased
+## [v3.1.0] - 2026-06-08
 
 ### Added
 
@@ -12,7 +12,7 @@
 - A `linkOnly` relation links records by primary key, so assigning an unsaved (new) record throws `yii\base\InvalidArgumentException`.
 - `linkOnly` on a relation whose foreign key is on the related record (e.g. `hasMany(Child::class, ['owner_id' => 'id'])`) throws `yii\base\InvalidConfigException`, since linking would require saving that record.
 
-## [v3.0.0] Unreleased
+## [v3.0.0] - 2026-06-08
 
 > This release contains breaking changes.
 > The minimum PHP version is now 8.4, and the behavior's `loadRelations()` method has been renamed.
