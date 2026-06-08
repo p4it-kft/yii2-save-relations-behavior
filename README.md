@@ -252,6 +252,44 @@ For example, related `projectLinks` records will automatically be deleted when t
 > Every records related to the main model as they are defined in their `ActiveQuery` statement will be deleted.
 
 
+Link related records without saving them (`linkOnly`)
+-----------------------------------------------------
+
+By default, assigning a relation and saving the owner validates **and** saves every related record — even pre-existing ones whose own attributes did not change. When the related records are entities you only want to *link* (not author), this is undesirable: a related record that is invalid by its own rules would make the owner save fail, and rows the user never touched would receive needless `UPDATE` statements.
+
+Declaring a relation with the `linkOnly` property set to `true` makes the behavior manage **only the relationship link** — junction rows for a via-table (many-to-many) relation, or the owner-side foreign key for an owner-side has-one. The related records are treated as immutable, pre-persisted entities referenced by primary key: they are **never validated nor saved**.
+
+```php
+...
+'saveRelations' => [
+    'class'     => SaveRelationsBehavior::class,
+    'relations' => [
+        'products' => ['linkOnly' => true],
+    ],
+],
+...
+```
+
+```php
+$category->products = [$product1, $product2]; // existing records, possibly invalid by their own rules
+$category->save();                             // syncs the junction rows only; never re-validates/re-saves the products
+```
+
+`linkOnly` composes with `extraColumns` (junction extra columns are still written on link) and with `cascadeDelete` (still honored on owner delete).
+
+> **Scope:**
+> `linkOnly` is supported for via-table (many-to-many) relations, via has-one relations, and has-one relations whose foreign key is on the owner. For a relation whose foreign key lives on the *related* record (e.g. `hasMany(Child::class, ['owner_id' => 'id'])`), linking would require saving that record, so the behavior throws a `yii\base\InvalidConfigException`.
+
+> **Note:**
+> Because a link-only relation links records by primary key, every assigned record must already be persisted. Assigning an unsaved (new) record throws a `yii\base\InvalidArgumentException`.
+
+It is also possible to toggle link-only mode at runtime using `setRelationLinkOnly`:
+
+```php
+$model->setRelationLinkOnly('relationName'); // or ->setRelationLinkOnly('relationName', false) to disable
+```
+
+
 Populate the model and its relations with input data
 ----------------------------------------------------
 This behavior adds a convenient method to load relations models attributes in the same way that the load() method does.
