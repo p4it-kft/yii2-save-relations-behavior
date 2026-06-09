@@ -44,6 +44,7 @@ class SaveRelationsBehavior extends Behavior
     private array $_relationsExtraColumns = [];
     private array $_relationsCascadeDelete = [];
     private array $_relationsLinkOnly = [];
+    private array $_relationsSortColumn = [];
 
     /**
      * @var bool relations attributes now honor the `safe` validation rule
@@ -57,7 +58,7 @@ class SaveRelationsBehavior extends Behavior
     public function init()
     {
         parent::init();
-        $allowedProperties = ['scenario', 'extraColumns', 'cascadeDelete', 'linkOnly'];
+        $allowedProperties = ['scenario', 'extraColumns', 'cascadeDelete', 'linkOnly', 'sortColumn'];
         foreach ($this->relations as $key => $value) {
             if (is_int($key)) {
                 $this->_relations[] = $value;
@@ -88,6 +89,14 @@ class SaveRelationsBehavior extends Behavior
     }
 
     /**
+     * Whether the given relation persists its submitted order into a junction column (`sortColumn`).
+     */
+    private function isSortColumn(string $relationName): bool
+    {
+        return isset($this->_relationsSortColumn[$relationName]);
+    }
+
+    /**
      * Ensure a link-only relation can actually be linked without saving the related record.
      * That holds for via-table relations (junction rows) and for relations whose foreign key
      * lives on the owner (the link writes the owner's own column). When the foreign key lives
@@ -109,6 +118,27 @@ class SaveRelationsBehavior extends Behavior
                 "Relation '{$relationName}' cannot use linkOnly: its foreign key is on the related record, "
                 . 'so linking would require saving that record. Use linkOnly only for via-table (M2M) relations '
                 . 'or has-one relations whose foreign key is on the owner.'
+            );
+        }
+    }
+
+    /**
+     * Ensure a `sortColumn` relation actually has a junction table to write the position to.
+     * sortColumn persists the submitted order into a junction-table column, so it is only meaningful
+     * for via-table (M2M) relations; configuring it elsewhere is rejected. Checked up front (before
+     * the owner is saved) so the InvalidConfigException propagates instead of failing mid-transaction.
+     * @throws InvalidConfigException
+     */
+    private function assertSortColumnSupported(string $relationName, ActiveQuery $relation): void
+    {
+        if (!$this->isSortColumn($relationName)) {
+            return;
+        }
+        $via = $relation->via;
+        if (!$via instanceof ActiveQuery || empty($via->from)) {
+            throw new InvalidConfigException(
+                "Relation '{$relationName}' uses sortColumn but is not a via-table (M2M) relation; "
+                . 'sortColumn writes a position to a junction table, so define the relation with viaTable().'
             );
         }
     }
@@ -351,9 +381,12 @@ class SaveRelationsBehavior extends Behavior
             // Thrown here (outside saveRelatedRecords) so InvalidConfigException propagates instead of
             // being converted into a validation error.
             foreach ($this->_relations as $relationName) {
-                if ($this->isLinkOnly($relationName) && array_key_exists($relationName, $this->_oldRelationValue)) {
-                    $this->assertLinkOnlySupported($relationName, $model->getRelation($relationName));
+                if (!array_key_exists($relationName, $this->_oldRelationValue)) {
+                    continue;
                 }
+                $relation = $model->getRelation($relationName);
+                $this->assertLinkOnlySupported($relationName, $relation); // no-op unless linkOnly
+                $this->assertSortColumnSupported($relationName, $relation); // no-op unless sortColumn
             }
             if ($this->saveRelatedRecords($model, $event)) {
                 // If relation is has_one, try to set related model attributes
@@ -607,6 +640,11 @@ class SaveRelationsBehavior extends Behavior
         /** @var ActiveQuery $relation */
         $relation = $owner->getRelation($relationName);
 
+        // Snapshot the submitted order BEFORE link()/unlink() mutate the populated relation below:
+        // link() appends to the in-memory set (see BaseActiveRecord::link()), so reading the relation
+        // after the sync would double-count added rows. sortColumn needs the order exactly as submitted.
+        $sortedModels = $this->isSortColumn($relationName) ? $owner->{$relationName} : [];
+
         // Process new relations
         $existingRecords = [];
         /** @var ActiveQuery $relationModel */
@@ -660,6 +698,57 @@ class SaveRelationsBehavior extends Behavior
         foreach ($addedPks as $key) {
             $junctionTableColumns = $this->_getJunctionTableColumns($relationName, $actualModels[$key]);
             $owner->link($relationName, $actualModels[$key], $junctionTableColumns);
+        }
+
+        $this->_applyRelationSortColumn($relationName, $relation, $sortedModels);
+    }
+
+    /**
+     * Persist the submitted order of a via-table (M2M) relation into a sort column on the junction
+     * table (configured per relation via the `sortColumn` option). Positions are 0-based, in
+     * submitted order. Must run after the junction rows are linked and before the owner is refreshed.
+     *
+     * Each junction row is matched by owner key + related key + the relation's extraColumns (e.g. a
+     * `type` discriminator), so a junction shared by several relations is scoped correctly. The two
+     * link loops (rather than array_key_first) keep it correct for composite-key junctions too.
+     *
+     * @param BaseActiveRecord[] $orderedModels related models in submitted order, captured before
+     *                                          link()/unlink() mutated the populated relation
+     * @throws InvalidConfigException when sortColumn is set on a non-via-table relation
+     * @throws DbException
+     */
+    private function _applyRelationSortColumn(string $relationName, ActiveQuery $relation, array $orderedModels): void
+    {
+        if (!$this->isSortColumn($relationName)) {
+            return;
+        }
+
+        $via = $relation->via;
+        // Validated up front in beforeValidate(); re-checked defensively (e.g. markRelationDirty()).
+        if (!$via instanceof ActiveQuery || empty($via->from)) {
+            throw new InvalidConfigException(
+                "Relation '{$relationName}' uses sortColumn but is not a via-table (M2M) relation; "
+                . 'sortColumn writes a position to a junction table, so define the relation with viaTable().'
+            );
+        }
+
+        /** @var BaseActiveRecord $owner */
+        $owner = $this->owner;
+        $sortColumn = $this->_relationsSortColumn[$relationName];
+        $junctionTable = reset($via->from);
+        $db = $owner->getDb();
+
+        $position = 0;
+        foreach ($orderedModels as $relationModel) {
+            $condition = $this->_getJunctionTableColumns($relationName, $relationModel);
+            foreach ($via->link as $junctionColumn => $ownerAttribute) {
+                $condition[$junctionColumn] = $owner->{$ownerAttribute};
+            }
+            foreach ($relation->link as $relatedAttribute => $junctionColumn) {
+                $condition[$junctionColumn] = $relationModel->{$relatedAttribute};
+            }
+
+            $db->createCommand()->update($junctionTable, [$sortColumn => $position++], $condition)->execute();
         }
     }
 
