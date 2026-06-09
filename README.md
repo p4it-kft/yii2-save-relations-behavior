@@ -290,6 +290,40 @@ $model->setRelationLinkOnly('relationName'); // or ->setRelationLinkOnly('relati
 ```
 
 
+Persist the submitted order of a many-to-many relation (`sortColumn`)
+---------------------------------------------------------------------
+
+A junction table is an unordered set: by default the order in which related records are submitted is not stored anywhere, and re-saving the same records in a different order leaves the junction rows untouched. Declaring a relation with the `sortColumn` property makes the behavior write the **0-based position of each related record, in submitted order**, into the named junction-table column on every save.
+
+```php
+...
+'saveRelations' => [
+    'class'     => SaveRelationsBehavior::class,
+    'relations' => [
+        'products'     => ['linkOnly' => true, 'sortColumn' => 'sort_order'],
+        // sharing a junction across types: extraColumns scopes which rows are renumbered
+        'galleryFiles' => ['extraColumns' => ['type' => MediaFile::TYPE_GALLERY], 'sortColumn' => 'sort_order'],
+    ],
+],
+...
+```
+
+```php
+$category->products = [$product3, $product1, $product2];
+$category->save(); // junction sort_order becomes 0, 1, 2 for product3, product1, product2
+```
+
+All positions are rewritten on every save, so a pure reorder (no record added or removed) is persisted too — something `$owner->link()` alone cannot do, since it only ever touches added rows. The behavior owns **only this write**; how the relation reads back ordered stays in the relation getter (e.g. an `ORDER BY sort_order` in `getProducts()`).
+
+`sortColumn` composes with `linkOnly` and with `extraColumns`. When `extraColumns` is set (e.g. a `type` discriminator), it scopes the rows a relation renumbers, so several relations can share one junction without clobbering each other's order.
+
+> **Scope:**
+> `sortColumn` is supported only for via-table (many-to-many) relations declared with `viaTable()`. Configuring it on any other relation throws a `yii\base\InvalidConfigException`.
+
+> **Note:**
+> For a junction shared by several relations distinguished by an `extraColumns` discriminator, encode that discriminator in the relation's `onCondition` too (e.g. `->viaTable('table', $link, fn ($q) => $q->andOnCondition(['type' => ...]))`), so that reading and unlinking stay scoped to the right rows.
+
+
 Populate the model and its relations with input data
 ----------------------------------------------------
 This behavior adds a convenient method to load relations models attributes in the same way that the load() method does.

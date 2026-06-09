@@ -1,5 +1,15 @@
 # Yii2 Active Record Save Relations Behavior Change Log
 
+## [v3.2.0] - 2026-06-09
+
+### Added
+
+- New per-relation `sortColumn` option. When set to a junction-table column name, the behavior persists the 0-based position of each related record — in submitted order — into that column on every save, for via-table (many-to-many) relations. All positions are rewritten on each save, so a pure reorder (no membership change) is persisted too. Composes with `linkOnly` and `extraColumns` (the latter scopes which rows a relation renumbers when a junction is shared across relations).
+
+### Notes
+
+- `sortColumn` is supported only for via-table relations declared with `viaTable()`; configuring it on any other relation throws `yii\base\InvalidConfigException`.
+
 ## [v3.1.0] - 2026-06-08
 
 ### Added
